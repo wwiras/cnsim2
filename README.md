@@ -1,9 +1,6 @@
-# cnsim2
-This code is for the validation of Cloud Native Simulator
 
 ## Cloud-Native Simulation Framework for Gossip Protocol: Modeling and Analyzing Network Dynamics
-This code is for PLOS One article entitled *Cloud-Native Simulation Framework for Gossip Protocol: Modeling
-and Analyzing Network Dynamics*.
+This code is for the validation of Cloud Native Simulator.
 
 **A guide to deploy and utilizing a cloud-native simulation framework for studying gossip protocol 
 dynamics in distributed networks.**
