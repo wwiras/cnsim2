@@ -275,8 +275,6 @@ if __name__ == '__main__':
         # Using BA Model
         number_of_nodes = int(args.nodes)
         parameter = int(args.others)
-        # graph = construct_BA_network(number_of_nodes, parameter)
-        # graph = construct_BA_network2(number_of_nodes, parameter)
         graph = construct_BA_network(number_of_nodes, parameter,adjust)
 
     else:
