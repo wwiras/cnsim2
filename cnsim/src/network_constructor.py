@@ -66,7 +66,7 @@ def construct_BA_network(number_of_nodes, parameter, adjustment=0):
 
                 # get degree
                 degree = random.randint(min_degree, max_degree)
-                print(f"current degree: {degree}")
+                # print(f"current degree: {degree}")
 
                 # get edges for current node (i)
                 for conn in range(degree):
@@ -222,7 +222,6 @@ def save_topology_to_json(graph, others, type="BA"):
 
     # Get current date and time + second
     now = datetime.now()
-    # dt_string = now.strftime("%b%d%Y%H%M")  # Format: Dec2320241946
     dt_string = now.strftime("%b%d%Y%H%M%S")  # Format: Dec232024194653
     filename = f"nodes{len(graph)}_{dt_string}_{type}{others}.json"
 
@@ -284,10 +283,6 @@ if __name__ == '__main__':
         probability_of_edges = float(args.others) # 0.5
         graph = construct_ER_network(number_of_nodes, probability_of_edges)
 
-        # if args.save:
-        # Save the topology to a JSON file
-        #     save_topology_to_json(graph, probability_of_edges, "ER")
-
     if graph:
 
         print(f"Graph Before: {graph}")
@@ -309,7 +304,7 @@ if __name__ == '__main__':
         print(f"{args.model} network model is SUCCESSFUL ! ....")
         print(f"Graph After: {network}")
         if args.model == 'BA':
-            confirm_save(network,parameter,args.model)
+            confirm_save(network,parameter, args.model)
         else:
             confirm_save(network, probability_of_edges, args.model)
 
