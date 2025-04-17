@@ -226,11 +226,10 @@ if __name__ == '__main__':
     parser.add_argument('--others', required=True, help="Total number of probability (ER) or parameter (BA)")
     parser.add_argument('--model', required=True, help="Total number of nodes for the topology")
     # Add the optional argument with a default value of False
-    parser.add_argument('--minlat', default=0 , help="Min latency of nodes for the topology")
-    parser.add_argument('--maxlat', default=0, help="Max latency of nodes for the topology")
-    parser.add_argument('--adjust', default=0, help="Adjustment factor for the topology")
-    parser.add_argument('--display', action='store_true', help="Display new topology (default: False)")
-    parser.add_argument('--save', action='store_true', help="Save new topology to json(default: False)")
+    parser.add_argument('--minlat', default=0 , help="Min latency of nodes for the topology (optional)")
+    parser.add_argument('--maxlat', default=0, help="Max latency of nodes for the topology (optional)")
+    parser.add_argument('--adjust', default=0, help="Adjustment factor for the topology (optional)")
+    parser.add_argument('--save', action='store_true', help="Save new topology to json(default: False) - (optional)")
     args = parser.parse_args()
 
     # Getting minimum and maximum latency
