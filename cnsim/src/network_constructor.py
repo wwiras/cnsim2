@@ -263,7 +263,8 @@ if __name__ == '__main__':
         network = set_network_mapping(graph, number_of_nodes)
 
         # Set latency ranging from minimum and maximum latency
-        network = set_network_latency(network,minlat,maxlat)
+        if minlat == 0 and maxlat == 0: # no latency required
+            network = set_network_latency(network,minlat,maxlat)
 
         # Get average latency for the network
         network.average_weight = calculate_average_weight(network)
