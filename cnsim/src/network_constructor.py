@@ -81,16 +81,18 @@ def construct_BA_network(number_of_nodes, parameter, adjustment=0):
         # Make sure BA network model degree connection average is as input
         # Check current and target average degree connection
         current_avg_degree = sum(dict(network.degree()).values()) / number_of_nodes
-        # print(f"Current average degree: {current_avg_degree}")
-        target_avg_degree = parameter
-        # print(f"Target average degree: {target_avg_degree}")
-        # print(f"nx.is_connected(network): {nx.is_connected(network)}")
+        target_degree = parameter
 
-        if target_avg_degree <= current_avg_degree and nx.is_connected(network):
-            print(f"Current average degree: {current_avg_degree} is higher than or the same as Target average degree:{target_avg_degree}  ")
+        if target_degree <= current_avg_degree and nx.is_connected(network):
+            # print(f"Current average degree: {current_avg_degree} is higher than or the same as Target degree:{target_degree}  ")
+            print(f"Current average degree: {current_avg_degree} - Greater than target degree")
+            print(f"Target degree:{target_degree}")
+            print(f"nx.is_connected(network): {nx.is_connected(network)}")
             connected = True
         else:
-            print(f"Current average degree: {current_avg_degree} is smaller than Target average degree:{target_avg_degree}")
+            # print(f"Current average degree: {current_avg_degree} is smaller than Target degree:{target_degree}")
+            print(f"Current average degree: {current_avg_degree} - Less than target degree")
+            print(f"Target degree:{target_degree}")
             print(f"Or connected is {nx.is_connected(network)} ...")
             break
 
@@ -118,6 +120,7 @@ def construct_ER_network(number_of_nodes, probability_of_edges):
     # print(f"components: {components}")
 
     # If there's more than one component, connect them
+    # This is common for ER model. Some nodes not connected
     if len(components) > 1:
         for i in range(len(components) - 1):
             # Choose a random node from the current component
@@ -136,14 +139,7 @@ def construct_ER_network(number_of_nodes, probability_of_edges):
     print(f"avg_graph_degree: {avg_graph_degree}")
 
     if avg_graph_degree == average_degree:
-        print(f"nx.is_connected(ER_graph) 1 : {nx.is_connected(ER_graph)}")
-
-        # Get the separate components
-        # components = list(nx.connected_components(ER_graph))
-
-        # Print the components
-        # print(f"Separate components: {components}")
-        # print(f"Total Separate components: {len(components)}")
+        print(f"nx.is_connected(ER_graph) : {nx.is_connected(ER_graph)}")
 
         if nx.is_connected(ER_graph):
             return ER_graph
@@ -186,30 +182,6 @@ def calculate_average_weight(graph):
         return average_weight
     else:
         return 0  # Or handle the case where there are no edges with weights
-
-def display_graph(graph, title="Network Graph"):
-  """
-  Displays a network graph using Matplotlib.
-
-  Args:
-    graph: The NetworkX graph object.
-    title: (Optional) The title of the plot.
-  Warning : Do not use this if nodes more than 100 are present in the graph
-  It will use lot of memory
-  """
-
-  pos = nx.spring_layout(graph)  # Position nodes using spring layout
-
-  # Draw nodes with labels
-  nx.draw(graph, pos, with_labels=True, node_size=500, node_color="lightblue")
-
-  # Draw edge labels (if any)
-  edge_labels = nx.get_edge_attributes(graph, 'weight')
-  if edge_labels:
-    nx.draw_networkx_edge_labels(graph, pos, edge_labels=edge_labels)
-
-  plt.title(title)
-  plt.show()
 
 def save_topology_to_json(graph, others, type="BA"):
     """
