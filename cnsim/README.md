@@ -67,6 +67,11 @@ options:
 ```
 > **_NOTE:_** If minlat=0 and maxlat=0, no latency added to the topology.
 
+This step will generate a json file containing network graph topology. Here each node is given 
+their neighbors depending on the model (BA or ER) and the network size (total number of nodes).
+Latency configuration is available but it is not considered for this validation test.
+A topolgy will be created if not exist in the root directory.
+
 #### Step 2 - Develop grpc communication protocol (using python3)
 gRPC is used for inter-node communication, providing efficient and reliable message passing. gRPC is a
 high-performance Remote Procedure Call (RPC) framework that allows nodes to communicate as if they 
