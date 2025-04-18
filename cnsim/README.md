@@ -12,6 +12,7 @@ Examples of ER/BA network construction (using network_contructor.py file) are as
 
 ```python
 # For ER network
+# others - between 0.01 to 0.99
 $ python network_constructor.py --nodes 10 --model ER --others 0.3
 Initial status from the input .....
 Number of nodes in the network: 10
@@ -30,6 +31,7 @@ Topology saved to nodes10_Apr172025124435_ER0.3.json
 
 ```python
 # For BA network
+# others - must be more than 1 and not float format
 $ python network_constructor.py --nodes 30 --model BA --others 5
 Initial status from the input .....
 Number of nodes in the network: 30
@@ -47,7 +49,7 @@ Topology saved to nodes30_Apr172025124309_BA5.json
 
 Here are some guideline on using **network_constructor.py**
 ```python
-$ python network_constructor.py --help
+$ python network_constructor.py --help                                   
 usage: network_constructor.py [-h] --nodes NODES --others OTHERS --model MODEL [--minlat MINLAT] [--maxlat MAXLAT] [--adjust ADJUST] [--save]
 
 Create network topology using networkx graphs and save it to json file
@@ -61,6 +63,7 @@ options:
   --maxlat MAXLAT  Max latency of nodes for the topology (optional)
   --adjust ADJUST  Adjustment factor for the topology (optional)
   --save           Save new topology to json(default: False) - (optional)
+
 ```
 > **_NOTE:_** If minlat=0 and maxlat=0, no latency added to the topology.
 

@@ -1,5 +1,4 @@
 import networkx as nx
-import matplotlib.pyplot as plt
 import json
 from itertools import combinations
 import random
@@ -83,17 +82,13 @@ def construct_BA_network(number_of_nodes, parameter, adjustment=0):
         current_avg_degree = sum(dict(network.degree()).values()) / number_of_nodes
         target_degree = parameter
 
-        if target_degree <= current_avg_degree and nx.is_connected(network):
-            # print(f"Current average degree: {current_avg_degree} is higher than or the same as Target degree:{target_degree}  ")
-            print(f"Current average degree: {current_avg_degree} - Greater than target degree")
-            print(f"Target degree:{target_degree}")
-            print(f"nx.is_connected(network): {nx.is_connected(network)}")
+        # Notify average degree and target degree
+        print(f"Average degree: {current_avg_degree}")
+        print(f"Target degree:{target_degree}")
+        print(f"nx.is_connected(network): {nx.is_connected(network)}")
+        if nx.is_connected(network):
             connected = True
         else:
-            # print(f"Current average degree: {current_avg_degree} is smaller than Target degree:{target_degree}")
-            print(f"Current average degree: {current_avg_degree} - Less than target degree")
-            print(f"Target degree:{target_degree}")
-            print(f"Or connected is {nx.is_connected(network)} ...")
             break
 
     if connected:
@@ -219,11 +214,29 @@ def confirm_save(graph,others,model):
         # Save the topology to a JSON file
         save_topology_to_json(graph, others, model)
 
+def ensure_number(value):
+    """
+    Ensures the input can be interpreted as an integer or float.
+
+    Args:
+        value: The string to check.
+
+    Returns:
+        The value as a float if successful, or raises ArgumentTypeError.
+        (You can modify to return int if appropriate)
+
+    Raises:
+        argparse.ArgumentTypeError: If the value cannot be converted to a number.
+    """
+    try:
+        return float(value)  # Try float conversion (more general)
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"'{value}' is not a valid number")
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Create network topology using networkx graphs and save it to json file")
-    parser.add_argument('--nodes', required=True, help="Total number of nodes for the topology")
-    parser.add_argument('--others', required=True, help="Total number of probability (ER) or parameter (BA)")
+    parser.add_argument('--nodes', type=int, required=True, help="Total number of nodes for the topology")
+    parser.add_argument('--others', type=ensure_number, required=True, help="Total number of probability (ER) or parameter (BA)")
     parser.add_argument('--model', required=True, help="Total number of nodes for the topology")
     # Add the optional argument with a default value of False
     parser.add_argument('--minlat', default=0 , help="Min latency of nodes for the topology (optional)")
@@ -239,23 +252,37 @@ if __name__ == '__main__':
     # print(f"maxlat: {maxlat}")
     adjust = int(args.adjust)
     # print(f"adjust: {adjust}")
+    number_of_nodes = int(args.nodes)
+    # print(f"adjust: {adjust}")
+    graph = False
 
-    if args.model== "BA":
+    if number_of_nodes > 0:
 
-        # Using BA Model
-        number_of_nodes = int(args.nodes)
-        parameter = int(args.others)
-        graph = construct_BA_network(number_of_nodes, parameter,adjust)
-
+        if args.model == "BA":
+            if isinstance(args.others, int) and args.others >= 1:
+                print(f" others={args.others} must be integer and greater than 0 !")
+            elif number_of_nodes <= int(args.others):
+                print(f" Connections(others={args.others}) must be less "
+                      f"than total nodes({number_of_nodes}) for {args.model} network model")
+            elif args.nodes > int(args.others):
+                # Using BA Model
+                parameter = int(args.others)
+                graph = construct_BA_network(number_of_nodes, parameter, adjust)
+        else:
+            # print(f" float(args.others)={float(args.others)}")
+            if 0.01 >= float(args.others):
+                print(f" others={args.others} must be greater than 0.01 and less than 0.99 !")
+            elif float(args.others) >= 0.99:
+                print(f" others={args.others} must be greater than 0.01 and less than 0.99 !")
+            else:
+                # Using ER Model
+                probability_of_edges = float(args.others) # 0.5
+                graph = construct_ER_network(number_of_nodes, probability_of_edges)
     else:
-
-        # Using ER Model
-        number_of_nodes = int(args.nodes)
-        probability_of_edges = float(args.others) # 0.5
-        graph = construct_ER_network(number_of_nodes, probability_of_edges)
+        print(f" number_nodes={args.nodes} must be more than 0")
 
     if graph:
-
+        # Graph before
         print(f"Graph Before: {graph}")
 
         # Set network mapping (gossip-statefulset labelling)
