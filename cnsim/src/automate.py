@@ -128,12 +128,13 @@ class Test:
         """
         Select a random running pod and return its IP address.
         """
-        command = "kubectl get pods --no-headers -o wide | grep Running | awk '{print $6}'"
+        command = "kubectl get pods --no-headers | grep Running | awk '{print $1}'"
+        # command = "kubectl get pods --no-headers -o wide | grep Running | awk '{print $6}'"
         stdout, stderr = self.run_command(command, suppress_output=True)
-        pod_ip_list = stdout.split()
-        if not pod_ip_list:
+        pod_name_list = stdout.split()
+        if not pod_name_list:
             raise Exception("No running pods found.")
-        return random.choice(pod_ip_list)
+        return random.choice(pod_name_list)
 
     def _get_malaysian_time(self):
         """Helper function to get the current time in Malaysian timezone (UTC+8)."""
@@ -142,7 +143,7 @@ class Test:
         malaysia_time = utc_time + malaysia_offset
         return malaysia_time
 
-    def access_pod_and_initiate_gossip(self, pod_ip, unique_id, iteration, total_nodes):
+    def access_pod_and_initiate_gossip(self, pod_name, unique_id, iteration, total_nodes):
         """
         Access the pod's shell, initiate gossip, and handle the response.
         """
@@ -269,9 +270,9 @@ if __name__ == '__main__':
 
                 # Test iteration starts here
                 for nt in range(0, test.num_tests + 1):
-                    pod_ip = test.select_random_pod()
-                    print(f"Selected pod: {pod_ip}", flush=True)
-                    if test.access_pod_and_initiate_gossip(pod_ip,unique_id, nt, total_nodes):
+                    pod_name = test.select_random_pod()
+                    print(f"Selected pod: {pod_name}", flush=True)
+                    if test.access_pod_and_initiate_gossip(pod_name, unique_id, nt, total_nodes):
                         print(f"Test {nt} complete.", flush=True)
                     else:
                         print(f"Test {nt} failed.", flush=True)
