@@ -155,14 +155,14 @@ class Test:
             message = f'{unique_id}-cubaan{total_nodes}-{iteration}'
             start_log = {
                 'event': 'gossip_start',
-                'pod_ip': pod_ip,
+                'pod_name': pod_name,
                 'message': message,
                 'start_time': start_time,
                 'details': f"Gossip propagation started for message: {message}"
             }
             print(json.dumps(start_log), flush=True)
 
-            session = subprocess.Popen(['kubectl', 'exec', '-it', pod_ip, '--request-timeout=3000',
+            session = subprocess.Popen(['kubectl', 'exec', '-it', pod_name, '--request-timeout=3000',
                                        '--', 'sh'], stdin=subprocess.PIPE,
                                       stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
             session.stdin.write(f'python3 start.py --message {message}\n')
