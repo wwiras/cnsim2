@@ -1,7 +1,7 @@
 import argparse
 import json
 import subprocess
-import sys
+import sys,re
 import traceback
 import time
 import uuid
