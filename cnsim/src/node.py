@@ -14,7 +14,9 @@ class Node(gossip_pb2_grpc.GossipServiceServicer):
 
     def __init__(self, service_name):
         self.hostname = socket.gethostname()
+        print(f"self.hostname: {self.hostname}", flush=True)
         self.host = socket.gethostbyname(self.hostname)
+        print(f"self.host: {self.host}", flush=True)
         self.port = '5050'
         self.service_name = service_name
         self.app_name = 'bcgossip'
