@@ -1,0 +1,17 @@
+## docker image
+# name: name of the based image
+# tag: the version of the image base
+image:
+  name: wwiras/cnsim2
+  tag: v1
+
+## Filename for the topology
+# Models data
+# ER - ER = Erdös – Rényi(ER) network model
+# BA - Barabási–Albert Network model
+# total number of nodes
+# Example : nodes10_Apr192025174502_ER0.6.json
+filename: nodes10_Apr192025174502_ER0.6.json
+
+## Total nodes to test
+totalNodes: 10
