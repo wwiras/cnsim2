@@ -164,6 +164,49 @@ class Test:
             session = subprocess.Popen(['kubectl', 'exec', '-it', pod_ip, '--request-timeout=3000',
                                        '--', 'sh'], stdin=subprocess.PIPE,
                                       stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+            session.stdin.write(f'python3 start.py --message {message}\n')
+            session.stdin.flush()
+
+            end_time = time.time() + 3000
+            while time.time() < end_time:
+                reads = [session.stdout.fileno()]
+                ready = select.select(reads, [], [], 5)[0]
+                if ready:
+                    output = session.stdout.readline()
+                    print(output, flush=True)
+                    if 'Received acknowledgment:' in output:
+                        end_time_log = self._get_malaysian_time().strftime('%Y/%m/%d %H:%M:%S')
+                        end_log = {
+                            'event': 'gossip_end',
+                            'pod_name': pod_name,
+                            'message': message,
+                            'end_time': end_time_log,
+                            'details': f"Gossip propagation completed for message: {message}"
+                        }
+                        print(json.dumps(end_log), flush=True)
+                        break
+                if session.poll() is not None:
+                    print("Session ended before completion.", flush=True)
+                    break
+            else:
+                print("Timeout waiting for gossip to complete.", flush=True)
+                return False
+
+            session.stdin.write('exit\n')
+            session.stdin.flush()
+            return True
+
+        except Exception as e:
+            error_log = {
+                'event': 'gossip_error',
+                'pod_name': pod_name,
+                'message': message,
+                'error': str(e),
+                'details': f"Error accessing pod {pod_name}: {e}"
+            }
+            print(json.dumps(error_log), flush=True)
+            traceback.print_exc()
+            return False
 
     def extract_topology_info(self):
         """Extracts total_nodes and model from the topology filename."""
