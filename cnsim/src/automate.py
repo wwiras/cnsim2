@@ -1,0 +1,244 @@
+import argparse
+import json
+import subprocess
+import sys
+import traceback
+import time
+import uuid
+import select
+import random
+from datetime import datetime, timedelta, timezone
+import os
+
+class Test:
+    def __init__(self, num_tests, helm_args, topology_file):
+        # Getting test details
+        self.num_tests = num_tests
+        self.helm_args = helm_args  # Store Helm arguments as a dictionary
+        self.gossip_delay = float(helm_args.get('gossipDelay', 5.0))  # Default 2s
+        self.topology_file = topology_file
+        print(f"self.num_tests = {self.num_tests}", flush=True)
+        print(f'self.helm_args = {self.helm_args}', flush=True)
+        print(f'self.topology_file = {self.topology_file}', flush=True)
+
+    def run_command(self, command, full_path=None, suppress_output=False):
+        """
+        Runs a command and handles its output and errors.
+        """
+        try:
+            if isinstance(command, str):
+                result = subprocess.run(command, check=True, text=True, capture_output=True, shell=True)
+            else:
+                result = subprocess.run(command, check=True, text=True, capture_output=True)
+
+            if full_path:
+                if 'unchanged' in result.stdout or 'created' in result.stdout:
+                    print(f"{full_path} applied successfully!", flush=True)
+                elif 'deleted' in result.stdout:
+                    print(f"{full_path} deleted successfully!", flush=True)
+                else:
+                    print(f"Changes applied to {full_path}:", flush=True)
+                    print(result.stdout, flush=True)
+
+            if not suppress_output:
+                print(f"result.stdout: {result.stdout}", flush=True)
+
+            return result.stdout, result.stderr
+        except subprocess.CalledProcessError as e:
+            if full_path:
+                print(f"An error occurred while applying {full_path}.", flush=True)
+            else:
+                print(f"An error occurred while executing the command.", flush=True)
+            print(f"Error message: {e.stderr}", flush=True)
+            traceback.print_exc()
+            sys.exit(1)
+        except Exception as e:
+            if full_path:
+                print(f"An unexpected error occurred while applying {full_path}.", flush=True)
+            else:
+                print(f"An unexpected error occurred while executing the command.", flush=True)
+            traceback.print_exc()
+            sys.exit(1)
+
+    def wait_for_pods_to_be_ready(self, namespace='default', expected_pods=0, timeout=1000):
+        """
+        Waits for all pods in the specified namespace to be ready.
+        """
+        print(f"Checking for pods in namespace {namespace}...", flush=True)
+        start_time = time.time()
+        get_pods_cmd = f"kubectl get pods -n {namespace} --no-headers | grep Running | wc -l"
+
+        while time.time() - start_time < timeout:
+            try:
+                result = subprocess.run(get_pods_cmd, shell=True,
+                                         stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+                running_pods = int(result.stdout.strip())
+                if running_pods >= expected_pods:
+                    print(f"All {expected_pods} pods are up and running in namespace {namespace}.", flush=True)
+                    return True
+                else:
+                    print(f" {running_pods} pods are up for now in namespace {namespace}. Waiting...", flush=True)
+            except subprocess.CalledProcessError as e:
+                print(f"Error checking for pods: {e.stderr}", flush=True)
+                return False
+            time.sleep(1)
+        print(f"Timeout waiting for pods to terminate in namespace {namespace}.", flush=True)
+        return False
+
+    def wait_for_pods_to_be_down(self, namespace='default', timeout=1000):
+        """
+        Waits for all pods in the specified namespace to be down.
+        """
+        print(f"Checking for pods in namespace {namespace}...", flush=True)
+        start_time = time.time()
+        get_pods_cmd = f"kubectl get pods -n {namespace} --no-headers | grep Terminating | wc -l"
+
+        while time.time() - start_time < timeout:
+            try:
+                result = subprocess.run(get_pods_cmd, shell=True,
+                                         stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+                if "No resources found" in result.stderr:
+                    print(f"No pods found in namespace {namespace}.", flush=True)
+                    return True
+                else:
+                    print(f"Pods still exist in namespace {namespace}. Waiting...", flush=True)
+            except subprocess.CalledProcessError as e:
+                print(f"Error checking for pods: {e.stderr}", flush=True)
+                return False
+            time.sleep(1)
+        print(f"Timeout waiting for pods to terminate in namespace {namespace}.", flush=True)
+        return False
+
+    def get_num_nodes(self, namespace='default'):
+        """
+        Dynamically determines the number of nodes (pods) by counting running pods.
+        """
+        get_pods_cmd = f"kubectl get pods -n {namespace} --no-headers | grep Running | wc -l"
+        try:
+            result = subprocess.run(get_pods_cmd, shell=True,
+                                     stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+            num_nodes = int(result.stdout.strip())
+            print(f"Number of running pods (num_nodes): {num_nodes}", flush=True)
+            return num_nodes
+        except subprocess.CalledProcessError as e:
+            print(f"Error getting number of pods: {e.stderr}", flush=True)
+            return 0
+
+    def select_random_pod(self):
+        """
+        Select a random running pod and return its IP address.
+        """
+        command = "kubectl get pods --no-headers -o wide | grep Running | awk '{print $6}'"
+        stdout, stderr = self.run_command(command, suppress_output=True)
+        pod_ip_list = stdout.split()
+        if not pod_ip_list:
+            raise Exception("No running pods found.")
+        return random.choice(pod_ip_list)
+
+    def _get_malaysian_time(self):
+        """Helper function to get the current time in Malaysian timezone (UTC+8)."""
+        utc_time = datetime.now(timezone.utc)
+        malaysia_offset = timedelta(hours=8)
+        malaysia_time = utc_time + malaysia_offset
+        return malaysia_time
+
+    def access_pod_and_initiate_gossip(self, pod_ip, unique_id, iteration, total_nodes):
+        """
+        Access the pod's shell, initiate gossip, and handle the response.
+        """
+
+        time.sleep(self.gossip_delay)  # Use configurable delay
+
+        try:
+            start_time = self._get_malaysian_time().strftime('%Y/%m/%d %H:%M:%S')
+            message = f'{unique_id}-cubaan{total_nodes}-{iteration}'
+            start_log = {
+                'event': 'gossip_start',
+                'pod_ip': pod_ip,
+                'message': message,
+                'start_time': start_time,
+                'details': f"Gossip propagation started for message: {message}"
+            }
+            print(json.dumps(start_log), flush=True)
+
+            session = subprocess.Popen(['kubectl', 'exec', '-it', pod_ip, '--request-timeout=3000',
+                                       '--', 'sh'], stdin=subprocess.PIPE,
+                                      stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+
+    def extract_topology_info(self):
+        """Extracts total_nodes and model from the topology filename."""
+        nodes_match = re.search(r'nodes(\d+)_', self.topology_file)
+        total_nodes = int(nodes_match.group(1)) if nodes_match else None
+        model_match = re.search(r'_([A-Z]+)\d*\.json$', self.topology_file)
+        model = model_match.group(1) if model_match else None
+        return total_nodes, model
+
+    def checkFileExist(self):
+        """
+        Runs the automated gossip protocol tests.
+        """
+        # Check if the topology file exists
+        topology_file_path = os.path.join(os.getcwd(), "topology", self.topology_file)
+        if not os.path.exists(topology_file_path):
+            print(f"Error: Topology file not found: {topology_file_path}", flush=True)
+            return False
+        else:
+            return True
+
+if __name__ == '__main__':
+    # Parse arguments
+    parser = argparse.ArgumentParser(description="Usage: python automate.py --num_tests <number_of_tests> --set key1=value1 key2=value2 ...")
+    parser.add_argument('--num_tests', required=True, type=int, help="Total number of tests to do")
+    parser.add_argument('--filename', required=True, type=str, help="Topology filename")
+    parser.add_argument('--set', action='append', help="Helm --set arguments in key=value format", default=[])
+    args = parser.parse_args()
+
+    # Convert --set arguments into a dictionary
+    helm_args = {}
+    for s in args.set:
+        key, value = s.split('=', 1)
+        helm_args[key] = value
+
+    test = Test(args.num_tests, helm_args, args.filename)  # Pass the Helm arguments to Test
+    if test.checkFileExist():
+
+        total_nodes, model = test.extract_topology_info()
+        print(f"totalNodes confirmed: {total_nodes}", flush=True)
+
+        # test = Test(args.num_tests, helm_args)  # Pass the Helm arguments to Test
+
+        # Helm name is fixed
+        helmname = 'cnsim'
+
+        if test.wait_for_pods_to_be_down(namespace='default', timeout=1000):
+            # Build the Helm install command
+            helm_command = ['helm', 'install', helmname, './chartsim', '--debug']
+            for key, value in helm_args.items():
+                helm_command.extend(['--set', f'{key}={value}'])
+
+            # Apply Helm
+            result = test.run_command(helm_command)
+            print(f"Helm {helmname} started...", flush=True)
+
+            # Wait for pods to be ready
+            if test.wait_for_pods_to_be_ready(namespace='default', expected_pods=int(total_nodes), timeout=1000):
+                unique_id = str(uuid.uuid4())[:4]
+
+                # Test iteration starts here
+                for nt in range(0, test.num_tests + 1):
+                    pod_ip = test.select_random_pod()
+                    print(f"Selected pod: {pod_ip}", flush=True)
+                    if test.access_pod_and_initiate_gossip(pod_ip,unique_id, nt, total_nodes):
+                        print(f"Test {nt} complete.", flush=True)
+                    else:
+                        print(f"Test {nt} failed.", flush=True)
+            else:
+                print(f"Failed to prepare pods for {helmname}.", flush=True)
+
+            # Remove Helm
+            result = test.run_command(['helm', 'uninstall', helmname])
+            print(f"Helm {helmname} will be uninstalled...", flush=True)
+            if test.wait_for_pods_to_be_down(namespace='default', timeout=1000):
+                print(f"Helm {helmname} uninstallation is complete...", flush=True)
+        else:
+            print(f"No file was found for args={args}")
