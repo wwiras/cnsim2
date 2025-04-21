@@ -163,7 +163,8 @@ class Node(gossip_pb2_grpc.GossipServiceServicer):
                 # Simulate latency
                 time.sleep(float(neighbor_latency) / 1000)
 
-                with grpc.insecure_channel(f"{peer_ip}:5050") as channel:
+                # with grpc.insecure_channel(f"{peer_ip}:5050") as channel:
+                with grpc.insecure_channel(f"{peer_name}:5050") as channel:
                     try:
                         stub = gossip_pb2_grpc.GossipServiceStub(channel)
                         stub.SendMessage(gossip_pb2.GossipMessage(
