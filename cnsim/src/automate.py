@@ -249,6 +249,16 @@ if __name__ == '__main__':
         total_nodes, model = test.extract_topology_info()
         print(f"totalNodes confirmed: {total_nodes}", flush=True)
 
+        # bind helm totalNodes value
+        if total_nodes > 0:
+            helm_args['totalNodes'] = total_nodes
+            print(f"helm_args['totalNodes']: {helm_args['totalNodes']}", flush=True)
+
+        # bind helm filename value
+        if args.filename is not None:
+            helm_args['filename'] = args.filename
+            print(f"helm_args['filename']: {helm_args['filename']}", flush=True)
+
         # test = Test(args.num_tests, helm_args)  # Pass the Helm arguments to Test
 
         # Helm name is fixed
